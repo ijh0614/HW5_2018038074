@@ -49,6 +49,7 @@ int main(void)
 	element data;
 	char command;//사용자가 입력하는 메뉴
 
+	printf("---[2018038074]---[임종훈]---");
 	do{
 		printf("\n-----------------------------------------------------\n");
 		printf("                     Circular Q                   \n");
@@ -65,7 +66,7 @@ int main(void)
 			enQueue(cQ, data);//Queue 입력함수
 			break;
 		case 'd': case 'D':
-			deQueue(cQ, &data);
+			deQueue(cQ, &data);//원소 제거
 			break;
 		case 'p': case 'P':
 			printQ(cQ);
@@ -73,7 +74,7 @@ int main(void)
 		case 'b': case 'B':
 			debugQ(cQ);
 			break;
-		case 'q': case 'Q':
+		case 'q': case 'Q'://프로그램을 종료하기 전 동적할당 했던 메모리를 해제한다.
    	        freeQueue(cQ);
 			break;
 		default:
@@ -124,12 +125,12 @@ int isEmpty(QueueType *cQ)
 /* complete the function */
 int isFull(QueueType *cQ)
 {
-    if(cQ->front == 0){
-        if(cQ->rear == MAX_QUEUE_SIZE-1){
+    if(cQ->front == 0){//만약 front가 0이라면
+        if(cQ->rear == MAX_QUEUE_SIZE-1){//rear가 최대값 -1의 위치에 있을 때가 큐가 가득 찬 것이다.
             return 1;
         }
     }
-    else{
+    else{//그 외의 경우에는 rear이 front의 하나 뒤에 있을 때가 full
         if(cQ->front-1 == cQ->rear){
             return 1;
         }
@@ -143,11 +144,12 @@ void enQueue(QueueType *cQ, element item)
 {
     if(isFull(cQ)==1){//전처리 검사
         printf("Circular Queue is full!");
-        return 0;
+        return ;
     }
-    cQ->rear = (cQ->rear+1)%MAX_QUEUE_SIZE;
+    cQ->rear = (cQ->rear+1)%MAX_QUEUE_SIZE;//rear가 가르키는 값 1증가. 마지막 값이었다면 처음으로 돌리기
 
-	return 0;
+	cQ->queue[cQ->rear] = item;//item 삽입
+	return ;
 }
 
 /* complete the function */
@@ -155,10 +157,12 @@ void deQueue(QueueType *cQ, element *item)
 {
     if(isEmpty(cQ)==1){//전처리 검사
         printf("Circular Queue is empty!");
-        return 0;   
+        return ;   
     }
+	cQ->front = (cQ->front+1)%MAX_QUEUE_SIZE;//front가 지정하는 위치만 바꿔주고 굳이 이전 값을 지워주지는 않음.
 
-    return 0;
+
+    return ;
 }
 
 
@@ -166,15 +170,15 @@ void printQ(QueueType *cQ)
 {
 	int i, first, last;
 
-	first = (cQ->front + 1)%MAX_QUEUE_SIZE;
-	last = (cQ->rear + 1)%MAX_QUEUE_SIZE;
+	first = (cQ->front + 1)%MAX_QUEUE_SIZE;//front가 가르키고 있는 다음 위치부터 
+	last = (cQ->rear + 1)%MAX_QUEUE_SIZE;//while문에서 같았을 때, 반복문을 탈출해야 하므로 rear+1 해서 전부 출력할 수 있게 함.
 
 	printf("Circular Queue : [");
 
 	i = first;
-	while(i != last){
+	while(i != last){//큐 안에 들어있는 원소들 출력. i == last이면 탈출하므로 rear+1을 한 것
 		printf("%3c", cQ->queue[i]);
-		i = (i+1)%MAX_QUEUE_SIZE;
+		i = (i+1)%MAX_QUEUE_SIZE;//다음 원소로 이동
 
 	}
 	printf(" ]\n");
@@ -183,16 +187,15 @@ void printQ(QueueType *cQ)
 
 void debugQ(QueueType *cQ)
 {
-
 	printf("\n---DEBUG\n");
-	for(int i = 0; i < MAX_QUEUE_SIZE; i++)
+	for(int i = 0; i < MAX_QUEUE_SIZE; i++)//큐 마다 무엇이 들어있는지 확인.
 	{
-		if(i == cQ->front) {
-			printf("  [%d] = front\n", i);
+		if(i == cQ->front) {//front가 가르키고 있는 값이면
+			printf("  [%d] = front\n", i);//front의 위치임을 출력.
 			continue;
 		}
-		printf("  [%d] = %c\n", i, cQ->queue[i]);
+		printf("  [%d] = %c\n", i, cQ->queue[i]);//이외에는 저장된 값 출력
 
 	}
-	printf("front = %d, rear = %d\n", cQ->front, cQ->rear);
+	printf("front = %d, rear = %d\n", cQ->front, cQ->rear);//각각 위치 출력
 }
