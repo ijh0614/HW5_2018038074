@@ -16,6 +16,9 @@
 //열거형 선언. 우선순위를 정해줌. 해당 숫자를 반환
 typedef enum{
 	lparen = 0,  /* ( 왼쪽 괄호 */
+	/*스택 밖에 있을때는 우선순위가 가장 높지만, 직접 연산을 해주는게 아니라, 괄호 안의 연산자의 우선순위를 높혀주는 개념이므로
+	스택 안에오면 가장 낮은 연산순위로 계산해준다*/
+
 	rparen = 9,  /* ) 오른쪽 괄호*/
 	times = 7,   /* * 곱셈 */
 	divide = 6,  /* / 나눗셈 */
@@ -75,10 +78,10 @@ int main()
 
 		switch(command) {
 		case 'i': case 'I':
-			getInfix();
+			getInfix();//infix식을 입력받는다.
 			break;
 		case 'p': case 'P':
-			toPostfix();
+			toPostfix();//입력받은 infix식을 postfix 식으로 변환한다.
 			break;
 		case 'e': case 'E':
 			evaluation();
@@ -103,16 +106,16 @@ int main()
 
 void postfixPush(char x)
 {
-    postfixStack[++postfixStackTop] = x;
+    postfixStack[++postfixStackTop] = x;//먼저 증가시키고 연산
 }
 
-char postfixPop()
+char postfixPop()//반환값이 있는 이유가 postfixExp에 저장하기 위해
 {
     char x;
     if(postfixStackTop == -1)
         return '\0';
     else {
-    	x = postfixStack[postfixStackTop--];
+    	x = postfixStack[postfixStackTop--];//연산하고 top을 감소시킴.
     }
     return x;
 }
@@ -137,7 +140,7 @@ int evalPop()
 void getInfix()
 {
     printf("Type the expression >>> ");
-    scanf("%s",infixExp);
+    scanf("%s",infixExp);//전역 변수인 infixExp배열에 값 저장.
 }
 
 precedence getToken(char symbol)
@@ -176,16 +179,66 @@ void charCat(char* c)
 void toPostfix()
 {
 	/* infixExp의 문자 하나씩을 읽기위한 포인터 */
+	//전역 변수인 infixExp한테서 값 가져옴.
 	char *exp = infixExp;
 	char x; /* 문자하나를 임시로 저장하기 위한 변수 */
+	int num=0;//몇번재 postfixExp배열에 저장하는지
+	int priority=0;
+	int priority_x=0;
 
 	/* exp를 증가시켜가면서, 문자를 읽고 postfix로 변경 */
 	while(*exp != '\0')
 	{
 		/* 필요한 로직 완성 */
+		priority = getPriority(*exp);
 
+		if(priority==1){
+			postfixExp[num] = *exp;
+			num++;
+		}
+		else if(priority==0){// 왼쪽 괄호가 여러번 들어와도 우선순위가 같다고 pop되지 않도록 짜주어야 함.
+			postfixPush(*exp);//무조건 스택에 삽입해준다.
+		}
+		else if(priority==9){
+			while(1){
+				x = postfixPop();//일단 저장된 연산자를 꺼내서
+				if(x == "("){//왼쪽 괄호이면 그냥 탈출해서 ()를 버리기.
+					break;
+				}
+				else{//연산자이면 저장
+					postfixExp[num] = x;
+					num++;
+				}
+			}
+		}
+		else{
+
+			x = postfixPop(); //연산 순위를 비교하기 위해 잠깐 꺼내준다.
+
+			if(x=='\0'){//스택 안에 아무것도 없으면
+				postfixPush(*exp);//묻지도 따지지도 않고 스택에 저장!
+			}
+			else{
+				priority_x = getPriority(x);//x의 연산순위 반환
+				if(priority > priority_x){//새로온 연산자의 우선순위가 높으면
+					postfixPush(x);
+					postfixPush(*exp);//새로 들어온 연산자가 top에 오도록 저장.
+				}
+				else if(priority <= priority_x){//원래 연산자의 우선순위가 높거나 같으면
+					postfixPush(*exp);//새로 들어온 연산자는 스택에 저장하고
+					postfixExp[num] = x;//top에서 꺼낸 우선순위 높은 연산자 삽입.
+					num++;
+				}
+			}
+		}
+		exp++;
 	}
 
+	do{//아직 꺼내주지 않은 연산자들 스택에서 꺼내기
+		x = postfixPop();
+		postfixExp[num] = x;//top에서 꺼낸 우선순위 높은 연산자 삽입.
+		num++;
+	}while(x!='\0');
 	/* 필요한 로직 완성 */
 
 }
