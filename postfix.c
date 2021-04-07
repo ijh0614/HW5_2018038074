@@ -43,10 +43,10 @@ int evalStackTop = -1;	   /* evalStack용 top */
 int evalResult = 0;	   /* 계산 결과를 저장 */
 
 void postfixpush(char x);//infix를 postfix로 변환시 '연산자'를 postfixStack에 저장한다.
-char postfixPop();//postfixStack에서 postfixExp로 보내고 postfixStack에 있는 값을 지운다.
+char postfixPop();//postfixStack에서 postfixExp로 보내고 postfixStack에 있는 값을 지울 때 사용.
 
 void evalPush(int x);//postfix로 변환한 식을 계산해서 결과를 만들어줄 때 evalStack에 저장하는 함수.
-int evalPop();//evalResult로 값을 보낼 때 evalStack에 top을 지우는 함수
+int evalPop();//evalResult로 값을 보내기 위해서 계산할 때 evalStack에 top을 지우는 함수
 
 void getInfix();//사용자로부터 식을 입력받는 함수.
 
@@ -54,7 +54,7 @@ precedence getToken(char symbol);/*getToken은 열거형 precedence안에 있는
 연산기호를 받아서 우선순위 숫자를 반환.*/
 precedence getPriority(char x);//우선순위를 결정하는 함수. getToken을 호출한다.
 
-void charCat(char* c);//*infix에서 postfix로 변환할때 이어붙혀주는 식
+void charCat(char* c);//infix에서 postfix로 변환할때 이어붙혀주는 식
 void toPostfix();//infix -> postfix로 바꾸는 함수
 void debug();//각각 무슨무슨 값 들어있는지 설명
 void reset();//초기화
@@ -64,9 +64,9 @@ int main()
 {
 	char command;//사용자 입력 저장하는 변수
 
-	printf("---[2018038074]---[임종훈]---");
 
 	do{
+		printf("---[2018038074]---[임종훈]---\n");
 		printf("----------------------------------------------------------------\n");
 		printf("               Infix to Postfix, then Evaluation               \n");
 		printf("----------------------------------------------------------------\n");
@@ -83,16 +83,16 @@ int main()
 		case 'p': case 'P':
 			toPostfix();//입력받은 infix식을 postfix 식으로 변환한다.
 			break;
-		case 'e': case 'E':
+		case 'e': case 'E'://
 			evaluation();
 			break;
-		case 'd': case 'D':
+		case 'd': case 'D'://디버그. 여러 상태의 값을 출력
 			debug();
 			break;
-		case 'r': case 'R':
+		case 'r': case 'R'://리셋
 			reset();
 			break;
-		case 'q': case 'Q':
+		case 'q': case 'Q'://프로그램 종료
 			break;
 		default:
 			printf("\n       >>>>>   Concentration!!   <<<<<     \n");
@@ -182,7 +182,6 @@ void toPostfix()
 	//전역 변수인 infixExp한테서 값 가져옴.
 	char *exp = infixExp;
 	char x; /* 문자하나를 임시로 저장하기 위한 변수 */
-	int num=0;//몇번재 postfixExp배열에 저장하는지
 	int priority=0;
 	int priority_x=0;
 
@@ -193,8 +192,7 @@ void toPostfix()
 		priority = getPriority(*exp);
 
 		if(priority==1){
-			postfixExp[num] = *exp;
-			num++;
+			charCat(exp);
 		}
 		else if(priority==0){// 왼쪽 괄호가 여러번 들어와도 우선순위가 같다고 pop되지 않도록 짜주어야 함.
 			postfixPush(*exp);//무조건 스택에 삽입해준다.
@@ -202,12 +200,12 @@ void toPostfix()
 		else if(priority==9){
 			while(1){
 				x = postfixPop();//일단 저장된 연산자를 꺼내서
-				if(x == "("){//왼쪽 괄호이면 그냥 탈출해서 ()를 버리기.
+				priority_x = getPriority(x);
+				if(priority_x == 0){//왼쪽 괄호이면 그냥 탈출해서 ()를 버리기.
 					break;
 				}
 				else{//연산자이면 저장
-					postfixExp[num] = x;
-					num++;
+					charCat(&x);
 				}
 			}
 		}
@@ -226,8 +224,7 @@ void toPostfix()
 				}
 				else if(priority <= priority_x){//원래 연산자의 우선순위가 높거나 같으면
 					postfixPush(*exp);//새로 들어온 연산자는 스택에 저장하고
-					postfixExp[num] = x;//top에서 꺼낸 우선순위 높은 연산자 삽입.
-					num++;
+					charCat(&x);//top에서 꺼낸 우선순위 높은 연산자 삽입.
 				}
 			}
 		}
@@ -236,8 +233,7 @@ void toPostfix()
 
 	do{//아직 꺼내주지 않은 연산자들 스택에서 꺼내기
 		x = postfixPop();
-		postfixExp[num] = x;//top에서 꺼낸 우선순위 높은 연산자 삽입.
-		num++;
+		charCat(&x);//top에서 꺼낸 우선순위 높은 연산자 삽입.
 	}while(x!='\0');
 	/* 필요한 로직 완성 */
 
@@ -273,5 +269,44 @@ void reset()
 void evaluation()
 {
 	/* postfixExp, evalStack을 이용한 계산 */
+	char *token = postfixExp;//주소의 시작값 입력받음
+	int temp1=0;
+	int temp2=0;
+	int priority_token=0;
+
+	//evalstack에는 정수를 입력받아야 함!
+	while(*token != '\0')//postfixExp 끝에 오면 탈출
+	{
+		priority_token = getPriority(*token);
+		if(priority_token==1){//만약 피연산자라면
+			evalPush((*token) - '0');//스택에 저장. 문자 아스키코드만큼 빼준 정수값이 저장됨.
+		}
+		else{//그게 아니라 연산자라면, 입력한 것은 이항 연산자 밖에 없으므로 
+			temp1 = evalPop();
+			temp2 = evalPop();
+			switch(priority_token)//계산 후 결과를 스택에 저장
+			{
+			case minus:
+				evalPush(temp2 - temp1);
+				break;
+			case plus:
+				evalPush(temp2 + temp1);
+				break;
+			case divide:
+				evalPush(temp2 / temp1);
+				break;
+			case times:
+				evalPush(temp2 * temp1);
+				break;
+			default:
+				break;
+			}
+		}
+
+		token++;//다음에 저장된 postfix식의 원소로 이동.
+	}
+	evalResult = evalStack[0];//결과를 저장.
+	//while문에서 탈출시 evalStack에 결과값 하나만 저장되어 있음.
+	
 }
 
